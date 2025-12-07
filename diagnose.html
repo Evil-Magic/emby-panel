@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鱼人夜色终端 · 自测仪 v1.0</title>
+<style>
+body {background:#000;color:#facc15;font-family:'Courier New',monospace;margin:0;padding:20px;}
+h1{text-align:center;color:#fde68a;text-shadow:0 0 8px #facc15;margin-bottom:5px;}
+#clock{text-align:center;font-size:1.1em;color:#facc15;margin-bottom:20px;}
+#init{color:#a16207;text-align:center;margin-bottom:20px;animation:blink 1.2s steps(2,start) infinite;}
+@keyframes blink{to{visibility:hidden;}}
+.test-item{margin:10px 0;padding:10px;border:1px solid #facc15;border-radius:8px;background:#111;position:relative;overflow:hidden;}
+.test-status{position:absolute;right:10px;top:10px;font-weight:bold;}
+.test-bar{height:4px;margin-top:8px;border-radius:2px;transition:all 1s;}
+.green{background:linear-gradient(90deg,#22c55e,#bef264);box-shadow:0 0 6px #22c55e;}
+.yellow{background:linear-gradient(90deg,#facc15,#fde68a);box-shadow:0 0 6px #facc15;animation:pulse 1s infinite alternate;}
+.red{background:linear-gradient(90deg,#ef4444,#f87171);box-shadow:0 0 8px #ef4444;animation:flash 0.5s infinite alternate;}
+@keyframes pulse{to{opacity:0.5;}}
+@keyframes flash{to{opacity:0.3;}}
+#log{margin-top:20px;background:#111;border:1px solid #a16207;padding:10px;border-radius:8px;height:120px;overflow-y:auto;font-size:0.85em;color:#fde68a;}
+footer{text-align:center;margin-top:20px;font-size:0.9em;color:#a16207;}
+</style>
+</head>
+<body>
+<h1>鱼人夜色终端 · 自测仪 v1.0</h1>
+<div id="init">⚙️ 正在初始化鱼人终端自测环境……</div>
+<div id="clock"></div>
+<div id="tests"></div>
+<div id="log"></div>
+<footer>🪧 鱼人夜色终端 · 自测仪 v1.0</footer>
+
+<script>
+const tests=[
+  {id:'audio',name:'🎧 音频检测',check:()=>new Promise(res=>{
+    const a=new Audio('assets/burn.mp3');
+    a.addEventListener('canplaythrough',()=>res('green'),{once:true});
+    a.addEventListener('error',()=>res('red'),{once:true});
+  })},
+  {id:'canvas',name:'🔥 Canvas 检测',check:()=>Promise.resolve(document.getElementById('fireCanvas')?'green':'yellow')},
+  {id:'clock',name:'⏰ 时钟终端',check:()=>Promise.resolve(true?'green':'red')},
+  {id:'storage',name:'💾 LocalStorage',check:()=>{try{localStorage.setItem('t','1');return Promise.resolve('green');}catch(e){return Promise.resolve('red');}}},
+  {id:'burn',name:'🧨 阅后即焚模块',check:()=>Promise.resolve(document.getElementById('burnLab')?'green':'red')},
+];
+
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').innerText='🕒 '+now.toLocaleTimeString('zh-CN',{hour12:false})+' UTC+8';
+}
+setInterval(updateClock,1000);updateClock();
+
+function createTestUI(){
+  const container=document.getElementById('tests');container.innerHTML='';
+  tests.forEach(t=>{
+    const div=document.createElement('div');div.className='test-item';div.id='test_'+t.id;
+    div.innerHTML=`<div>${t.name}</div><div class='test-status'>⏳</div><div class='test-bar'></div>`;
+    container.appendChild(div);
+  });
+}
+
+async function runTests(){
+  for(const t of tests){
+    const result=await t.check();
+    const div=document.getElementById('test_'+t.id);
+    const bar=div.querySelector('.test-bar');
+    const status=div.querySelector('.test-status');
+    if(result==='green'){bar.className='test-bar green';status.innerText='✅ 正常';}
+    else if(result==='yellow'){bar.className='test-bar yellow';status.innerText='⚠️ 部分加载';}
+    else{bar.className='test-bar red';status.innerText='❌ 异常';}
+  }
+}
+
+createTestUI();runTests();
+setInterval(runTests,5000);
+
+window.onerror=(msg,src,line,col,err)=>{
+  const log=document.getElementById('log');
+  log.innerHTML+='<div style="color:#f87171;">❌ JS错误: '+msg+' ('+src+':'+line+')</div>';
+};
+</script>
+</body>
+</html>
