@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鱼人夜色终端 · 阅后即焚实验模块 v2.0</title>
+<style>
+body {background:#000;color:#facc15;font-family:'Courier New',monospace;margin:0;padding:20px;}
+h1{text-align:center;color:#fde68a;text-shadow:0 0 10px #facc15;margin-bottom:5px;}
+h2{text-align:center;color:#a16207;font-size:0.9em;margin-top:0;}
+#clock{text-align:center;font-size:1.2em;color:#facc15;margin-bottom:20px;}
+textarea{width:100%;height:80px;background:#111;color:#fde68a;border:1px solid #facc15;border-radius:8px;padding:8px;margin-bottom:10px;}
+select,input,button{background:#222;color:#facc15;border:1px solid #facc15;border-radius:6px;padding:5px;margin:3px;}
+button:hover{background:#facc15;color:#000;cursor:pointer;}
+#burnArea{margin-top:20px;}
+.burnCard{background:#111;border:1px solid #facc15;border-radius:10px;padding:10px;margin-bottom:10px;position:relative;overflow:hidden;}
+.burnText{color:#fde68a;font-size:0.95em;}
+.burnTimer{color:#a16207;font-size:0.8em;margin-top:5px;}
+.burnMessage{position:absolute;bottom:10px;right:10px;color:#facc15;font-size:0.8em;opacity:0;transition:opacity 1s;}
+canvas#fireCanvas{position:fixed;left:0;top:0;pointer-events:none;width:100%;height:100%;z-index:-1;}
+</style>
+</head>
+<body>
+<h1>鱼人夜色终端 · 阅后即焚实验模块 v2.0</h1>
+<h2>鱼人夜色终端 · 实验模式 ONLINE</h2>
+<div id="clock"></div>
+
+<section id="burnLab">
+  <textarea id="burnText" placeholder="输入你想焚毁的内容..."></textarea>
+  <label>焚毁类型：</label>
+  <select id="burnMode">
+    <option value="time">按时间焚毁</option>
+    <option value="count">按阅后次数焚毁</option>
+  </select>
+  <br>
+  <label>单位：</label>
+  <select id="unit">
+    <option value="sec">秒</option>
+    <option value="min">分</option>
+    <option value="hour">时</option>
+    <option value="day">天</option>
+  </select>
+  <input type="number" id="value" placeholder="输入数量">
+  <button onclick="createBurn()">创建焚毁卡片</button>
+  <div id="burnArea"></div>
+</section>
+
+<canvas id="fireCanvas"></canvas>
+
+<script>
+function updateClock(){
+  const now = new Date();
+  const t = now.toLocaleTimeString('zh-CN',{hour12:false});
+  document.getElementById('clock').innerText = '🕒 ' + t + ' UTC+8';
+}
+setInterval(updateClock,1000);updateClock();
+
+let burns = JSON.parse(localStorage.getItem('burns')||'[]');
+const area = document.getElementById('burnArea');
+
+function createBurn(){
+  const text = document.getElementById('burnText').value.trim();
+  const mode = document.getElementById('burnMode').value;
+  const unit = document.getElementById('unit').value;
+  const val = parseInt(document.getElementById('value').value);
+  if(!text||!val)return alert('请输入内容与有效数值');
+  let seconds=val;
+  if(unit==='min')seconds*=60;if(unit==='hour')seconds*=3600;if(unit==='day')seconds*=86400;
+
+  const id=Date.now();
+  const obj={id,text,mode,val,unit,seconds,start:Date.now(),views:0};
+  burns.push(obj);
+  localStorage.setItem('burns',JSON.stringify(burns));
+  renderCard(obj);
+}
+
+function renderCard(obj){
+  const card=document.createElement('div');
+  card.className='burnCard';card.id='burn_'+obj.id;
+  card.innerHTML=`<div class='burnText'>${obj.text}</div><div class='burnTimer'></div><div class='burnMessage'>夜已照亮,今日清空,明天更好!</div>`;
+  area.appendChild(card);
+
+  if(obj.mode==='time'){
+    let remain=obj.seconds;
+    const timer=setInterval(()=>{
+      remain--;card.querySelector('.burnTimer').innerText='将在 '+remain+' 秒后焚毁';
+      if(remain<=0){clearInterval(timer);burn(card,obj);}
+    },1000);
+  }else{
+    card.onclick=()=>{obj.views++;if(obj.views>=obj.val)burn(card,obj);else card.querySelector('.burnTimer').innerText='已阅读 '+obj.views+' 次';};
+  }
+}
+
+function burn(card,obj){
+  playFireSound();
+  const msg=card.querySelector('.burnMessage');msg.style.opacity=1;
+  startFireAnimation();
+  setTimeout(()=>{card.remove();burns=burns.filter(x=>x.id!==obj.id);localStorage.setItem('burns',JSON.stringify(burns));},3000);
+}
+
+// 火焰音效
+const fireAudio=new Audio('assets/burn.mp3');fireAudio.volume=0.5;
+function playFireSound(){fireAudio.currentTime=0;fireAudio.play();}
+
+// Canvas火焰动画
+const c=document.getElementById('fireCanvas');const ctx=c.getContext('2d');
+let flames=[];function resize(){c.width=innerWidth;c.height=innerHeight;}window.onresize=resize;resize();
+function startFireAnimation(){
+  for(let i=0;i<80;i++)flames.push({x:Math.random()*c.width,y:c.height,vy:Math.random()*2+1,size:Math.random()*3+2,life:60});
+}
+function loop(){
+  ctx.clearRect(0,0,c.width,c.height);
+  for(let i=flames.length-1;i>=0;i--){
+    const f=flames[i];ctx.beginPath();
+    const grd=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.size);
+    grd.addColorStop(0,'rgba(250,204,21,0.8)');
+    grd.addColorStop(1,'rgba(250,204,21,0)');
+    ctx.fillStyle=grd;ctx.arc(f.x,f.y,f.size,0,Math.PI*2);ctx.fill();
+    f.y-=f.vy;f.life-=1;f.size*=0.97;if(f.life<=0)flames.splice(i,1);
+  }
+  requestAnimationFrame(loop);
+}loop();
+
+burns.forEach(renderCard);
+</script>
+</body>
+</html>
