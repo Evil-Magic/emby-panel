@@ -7,5 +7,4 @@
 2. 启用 GitHub Pages
 3. 访问链接: https://YuRen.github.io/emby-panel/
 
-## 封面更换
-替换 `assets/cover.jpg` 为你的图片 (推荐尺寸: 1280x720px)
+
