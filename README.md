@@ -2,9 +2,6 @@
 
 一个高颜值的 Emby 模拟下载与音乐控制界面，支持黑金主题、流光动画与音乐播放。
 
-## 使用说明
-1. 上传到 GitHub 仓库 `emby-panel`
-2. 启用 GitHub Pages
-3. 访问链接: https://YuRen.github.io/emby-panel/
+访问链接: https://YuRen.github.io/emby-panel/
 
 
