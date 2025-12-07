@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emby Manager 鱼人模拟测试面板</title>
+<style>
+body{background:#000;color:#facc15;font-family:'Courier New',monospace;padding:20px;}
+h1{text-align:center;color:#fde68a;text-shadow:0 0 8px #facc15;margin-bottom:20px;}
+.status-bar{display:flex;justify-content:space-between;margin-bottom:10px;font-weight:bold;}
+.progress-bg{background:#1f2937;height:8px;border-radius:4px;overflow:hidden;}
+.progress-bar{background:linear-gradient(90deg,#facc15,#fbbf24,#facc15);height:8px;width:0%;transition:width 0.4s;}
+button{border:none;border-radius:6px;padding:4px 10px;margin:2px;color:#fff;background:#b91c1c;cursor:pointer;}
+button:hover{opacity:0.8;}
+.table{width:100%;border-collapse:collapse;margin-top:10px;}
+.table th,.table td{padding:8px;border-bottom:1px solid rgba(250,204,21,0.2);text-align:left;}
+.audio-controls{text-align:center;margin-top:20px;background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;}
+</style>
+</head>
+<body>
+<h1>🎬 Emby Manager 鱼人模拟测试面板</h1>
+<div class="status-bar">
+  <span>等待：9318</span>
+  <span>上传：5</span>
+  <span>✔ 成功：16896</span>
+  <span>✖ 失败：1398</span>
+</div>
+<table class="table" id="fileTable">
+  <thead><tr><th>文件名</th><th>进度</th><th>速度</th><th>大小</th><th>操作</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<div class="audio-controls">
+  <h3>🎧 正在播放：暗里着迷 - 刘德华</h3>
+  <button onclick="playAudio()">▶️ 播放</button>
+  <button onclick="pauseAudio()">⏸ 暂停</button>
+  <br><label>音量：</label>
+  <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+</div>
+
+<script>
+const files = Array.from({length:5},(_,i)=>({name:`示例文件_${i+1}.mkv`,size:(Math.random()*8000+2000).toFixed(1),progress:Math.random()*0.6,speed:(Math.random()*5+1).toFixed(2),paused:false}));
+function renderTable(){
+ const tb=document.querySelector("#fileTable tbody");tb.innerHTML="";
+ files.forEach((f,i)=>{
+  const row=document.createElement("tr");
+  row.innerHTML=`<td>${f.name}</td>
+  <td><div class='progress-bg'><div class='progress-bar' style='width:${(f.progress*100).toFixed(1)}%'></div></div>${(f.progress*100).toFixed(1)}%</td>
+  <td>${f.paused?'暂停中':f.speed+' MB/s'}</td><td>${f.size} MB</td>
+  <td><button onclick='toggle(${i})'>${f.paused?'继续':'暂停'}</button></td>`;
+  tb.appendChild(row);
+ });
+}
+function toggle(i){files[i].paused=!files[i].paused;renderTable();}
+function simulate(){
+ files.forEach(f=>{if(!f.paused&&f.progress<1){f.progress+=Math.random()*0.01;f.speed=(Math.random()*5+1).toFixed(2);if(f.progress>1)f.progress=1;}});
+ renderTable();
+}
+setInterval(simulate,1000);
+renderTable();
+
+const audio=new Audio();
+audio.src="music/暗里着迷.mp3";
+function playAudio(){audio.play();}
+function pauseAudio(){audio.pause();}
+document.getElementById('volume').addEventListener('input',e=>audio.volume=e.target.value);
+</script>
+</body>
+</html>
